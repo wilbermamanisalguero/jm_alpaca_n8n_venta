@@ -1,0 +1,120 @@
+
+1. Venta -CURL - Caso Exitoso
+
+curl --location 'http://localhost:8082/api/venta/registrar' \
+--header 'Content-Type: application/json' \
+--data '{
+    "venta": {
+      "nombreArchivo": "VENTA-2025-001",
+      "tipoVenta": "FACTURA",
+      "fechaDespacho": "2025-12-30",
+      "rucVendedor": 20123456789,
+      "vendedor": "Alpaca Textiles S.A.C.",
+      "codigoFactura": "F001-00001234",
+      "rucCliente": 20987654321,
+      "cliente": "Exportadora Perú S.A.",
+      "facturaAnticipo": null,
+      "tipoMoneda": "USD",
+      "importeTotal": 15000.00,
+      "observacion": "Venta de lote premium",
+      "detalle": [
+        {
+          "producto": "Alpaca Huacaya Baby",
+          "tipoProducto": "FIBRA",
+          "peso": 50.5,
+          "descuento": 0,
+          "cantidad": 100,
+          "unidadMedida": "KG",
+          "valorUnitario": 150.00,
+          "importeSubTotal": 15000.00
+        }
+      ]
+    }
+  }'
+
+2. Venta - CURL - Caso con Error de Validación (suma incorrecta)
+
+  curl --location 'http://localhost:8082/api/venta/registrar' \
+--header 'Content-Type: application/json' \
+--data '{
+    "venta": {
+      "nombreArchivo": "VENTA-2025-002",
+      "tipoVenta": "FACTURA",
+      "fechaDespacho": "2025-12-30",
+      "rucVendedor": 20123456789,
+      "vendedor": "Alpaca Textiles S.A.C.",
+      "codigoFactura": "F001-00001235",
+      "rucCliente": 20987654321,
+      "cliente": "Exportadora Perú S.A.",
+      "facturaAnticipo": null,
+      "tipoMoneda": "USD",
+      "importeTotal": 16000.00,
+      "observacion": "Venta de lote premium",
+      "detalle": [
+        {
+          "producto": "Alpaca Huacaya Baby",
+          "tipoProducto": "FIBRA",
+          "peso": 50.5,
+          "descuento": 0,
+          "cantidad": 100,
+          "unidadMedida": "KG",
+          "valorUnitario": 150.00,
+          "importeSubTotal": 15000.00
+        }
+      ]
+    }
+  }'
+
+
+  3. Venta - CURL - Venta con Múltiples Detalles
+
+  curl --location 'http://localhost:8082/api/venta/registrar' \
+--header 'Content-Type: application/json' \
+--data '{
+    "venta": {
+      "nombreArchivo": "VENTA-2025-003",
+      "tipoVenta": "FACTURA",
+      "fechaDespacho": "2025-12-30",
+      "rucVendedor": 20123456789,
+      "vendedor": "Alpaca Textiles S.A.C.",
+      "codigoFactura": "F001-00001236",
+      "rucCliente": 20987654321,
+      "cliente": "Exportadora Perú S.A.",
+      "facturaAnticipo": null,
+      "tipoMoneda": "USD",
+      "importeTotal": 27500.00,
+      "observacion": "Venta mixta de productos",
+      "detalle": [
+        {
+          "producto": "Alpaca Huacaya Baby",
+          "tipoProducto": "FIBRA",
+          "peso": 50.5,
+          "descuento": 500.00,
+          "cantidad": 100,
+          "unidadMedida": "KG",
+          "valorUnitario": 150.00,
+          "importeSubTotal": 14500.00
+        },
+        {
+          "producto": "Alpaca Suri Premium",
+          "tipoProducto": "FIBRA",
+          "peso": 30.0,
+          "descuento": 0,
+          "cantidad": 60,
+          "unidadMedida": "KG",
+          "valorUnitario": 200.00,
+          "importeSubTotal": 12000.00
+        },
+        {
+          "producto": "Alpaca Standard",
+          "tipoProducto": "FIBRA",
+          "peso": 20.0,
+          "descuento": 0,
+          "cantidad": 10,
+          "unidadMedida": "KG",
+          "valorUnitario": 100.00,
+          "importeSubTotal": 1000.00
+        }
+      ]
+    }
+  }'
