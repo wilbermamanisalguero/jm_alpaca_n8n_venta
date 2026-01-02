@@ -225,335 +225,207 @@ CREATE INDEX IX_CD_ID_AGRUPACION  ON CLASIFICADO_DETALLE (ID_AGRUPACION);
 
 
 ------------------------------------------
---
+Analiza la imagen proporcionada y devuelve ÚNICAMENTE un JSON válido.
+NO incluyas texto adicional.
+NO Markdown.
+NO explicaciones.
+NO comentarios.
 
+OBJETIVO:
+Extraer un CLASIFICADO (cabecera + calidad + detalle) desde una hoja escrita a mano.
 
+==================================================
+REGLAS CRÍTICAS (OBLIGATORIAS)
+==================================================
 
+1) La respuesta DEBE ser exclusivamente un JSON válido.
+2) PROHIBIDO inferir, asumir o completar información no escrita explícitamente en la imagen.
+3) Si un dato NO aparece de forma clara y explícita → su valor DEBE ser null.
+4) PROHIBIDO generar valores por defecto (0, [], "", fechas, precios, etc.).
+5) PROHIBIDO deducir o inventar:
+   - clasificador
+   - calidad
+   - agrupación
+   - precios
+6) SOLO se permite el mapeo controlado cuando el TEXTO COINCIDE EXACTAMENTE con los nombres listados más abajo.
+7) Si un cálculo depende de un dato inexistente → el resultado DEBE ser null.
+8) No corrijas errores humanos del manuscrito (sumas mal hechas se respetan si están escritas).
 
+==================================================
+PASO 1: IDENTIFICAR CABECERA
+==================================================
 
-Realizar una aplicacion adaptable para web, tablet y celular , una aplicacion moderna y adaptable 
+CLASIFICADOR:
+Reconocer SOLO si aparece explícitamente uno de los siguientes nombres escritos:
+- ROGER
+- YOLA
+- ISIDORA
 
-Revisar imagen y realizar un prompt  
+Si no aparece claramente → null
 
-🔴 Paso 1: Identificar el clasificador y la fecha
-🔴 Paso 2: Conversión del esquema a texto
-  Encabezados / columnas (parte superior)
-  
-  Primera Sección Huacayo
-		Royal
-		BL-B
-		BL-X
-		FS-B
-		FS-X
-		HZ-B
-		HZ-X
-		AG
-		STD	
+FECHA:
+- Detectar formato dd-mm-yy o dd-m-yy
+- Convertir a dd/mm/yyyy
+- Año de 2 dígitos → 20yy
+Si no aparece → null
 
-   Segunda Sección Suri		
-		SURI-BL
-		SURI-FS
-		SURI-HZ
- 
-		
-🔴 Paso 3: Anota los Peso por cada columna o encabezado 
-🔴 Paso 4: Suma cada columna por cada calidad
-🔴 Paso 5: Realiza suma agrupada
-   
-    (total BL-B) suma (total BL-X) es igual BL
-    (total FS-B) suma (total FS-X) es igual FS
-    (total HZ-B) suma (total HZ-X)  suma (total AG) es igual HZ		
-	(total SURI-BL) suma (total SURI-FS) es igual SURI
-	
-	
-🔴 Paso 6: Poner precio y multiplicar
+OBSERVACIONES:
+- SOLO si existe texto adicional descriptivo
+- Caso contrario → null
 
-  Primera Sección Huacayo
-  
-    Royal * precio = importe subtotal
-    BL * precio = importe subtotal
-    FS * precio = importe subtotal
-    HZ * precio = importe subtotal
-	STD * precio= importe subtotal
+==================================================
+PASO 2: IDENTIFICAR COLUMNAS DE CALIDAD
+==================================================
 
-Segunda Sección Suri	
-	
-	SURI * precio= importe subtotal
-	SURI-HZ * precio= importe subtotal
-	
-	
-🔴 Paso 7: Suma  de todos importe subtotal	, el cual debe ser importe total
+Reconocer SOLO las calidades escritas exactamente como:
 
-		Parte inferior izquierda – Flujo de clasificado
-		Clasificado  ↓
-		Clasificado_detalle
-		(Dentro del cuadro: Producto)
-		 ↓
-		Clasificado_calculo
-		(Dentro del cuadro: precio)
-		
-Mejorar el json 
+HUACAYO:
+- ROYAL
+- BL-B
+- BL-X
+- FS-B
+- FS-X
+- HZ-B
+- HZ-X
+- AG
+- STD
+
+SURI:
+- SURI-BL
+- SURI-FS
+- SURI-HZ
+
+Si una columna NO existe en la imagen → pesos = [] y total_kg = null
+
+==================================================
+PASO 3: EXTRAER PESOS
+==================================================
+
+Para cada columna de calidad:
+- Extraer TODOS los valores numéricos escritos verticalmente
+- Mantener el orden de aparición
+- NO eliminar duplicados
+- NO redondear
+- NO corregir
+
+Ejemplo:
+"pesos": [50, 45, 60]
+
+==================================================
+PASO 4: SUMA POR CALIDAD
+==================================================
+
+- total_kg = suma de pesos SOLO si existen pesos
+- Si no hay pesos → total_kg = null
+
+==================================================
+PASO 5: DEFINICIÓN DE AGRUPACIONES
+==================================================
+
+Las agrupaciones SOLO existen así:
+
+- ROYAL     → [ROYAL]
+- BL        → [BL-B, BL-X]
+- FS        → [FS-B, FS-X]
+- HZ        → [HZ-B, HZ-X, AG]
+- STD       → [STD]
+- SURI      → [SURI-BL, SURI-FS]
+- SURI-HZ   → [SURI-HZ]
+
+==================================================
+PASO 6: TOTAL POR AGRUPACIÓN
+==================================================
+
+- total_kg = suma de total_kg de sus componentes
+- Si falta alguno → sumar SOLO los existentes
+- Si todos son null → total_kg = null
+
+==================================================
+PASO 7: PRECIO E IMPORTE
+==================================================
+
+- precio_kg SOLO si aparece explícitamente escrito
+- sub_total_importe = total_kg × precio_kg
+- Si falta uno → sub_total_importe = null
+
+==================================================
+PASO 8: IMPORTE TOTAL
+==================================================
+
+- importe_total = suma de sub_total_importe
+- Si alguno es null → sumar SOLO los válidos
+- Si ninguno existe → importe_total = null
+
+==================================================
+PASO 9: RESPUESTA FINAL
+==================================================
+
+Devuelve EXCLUSIVAMENTE el siguiente JSON,
+completando SOLO lo que esté explícitamente en la imagen:
 
 {
-  "fuente": null,
-  "metadatos": {
+  "clasificado": {
     "clasificador": null,
-    "fecha": null
+    "fecha": null,
+    "observaciones": null,
+    "importe_total": null
   },
-  "secciones": {
-    "huacayo": {
-      "calidades": {
-        "Royal": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "BL-B": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "BL-X": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "FS-B": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "FS-X": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "HZ-B": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "HZ-X": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "AG": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "STD": {
-          "pesos": [],
-          "total_kg": null
-        }
-      }
+  "clasificado_calidad": {
+    "ROYAL": { "pesos": [], "total_kg": null },
+    "BL-B": { "pesos": [], "total_kg": null },
+    "BL-X": { "pesos": [], "total_kg": null },
+    "FS-B": { "pesos": [], "total_kg": null },
+    "FS-X": { "pesos": [], "total_kg": null },
+    "HZ-B": { "pesos": [], "total_kg": null },
+    "HZ-X": { "pesos": [], "total_kg": null },
+    "AG": { "pesos": [], "total_kg": null },
+    "STD": { "pesos": [], "total_kg": null },
+    "SURI-BL": { "pesos": [], "total_kg": null },
+    "SURI-FS": { "pesos": [], "total_kg": null },
+    "SURI-HZ": { "pesos": [], "total_kg": null }
+  },
+  "clasificado_detalle": {
+    "ROYAL": {
+      "componentes": ["ROYAL"],
+      "total_kg": null,
+      "precio_kg": null,
+      "sub_total_importe": null
     },
-    "suri": {
-      "calidades": {
-        "SURI-BL": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "SURI-FS": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "SURI-HZ": {
-          "pesos": [],
-          "total_kg": null
-        },
-        "SURI-STD": {
-          "pesos": [],
-          "total_kg": null
-        }
-      }
-    }
-  },
-  "agrupaciones": {
     "BL": {
       "componentes": ["BL-B", "BL-X"],
       "total_kg": null,
       "precio_kg": null,
-      "importe": null
+      "sub_total_importe": null
     },
     "FS": {
       "componentes": ["FS-B", "FS-X"],
       "total_kg": null,
       "precio_kg": null,
-      "importe": null
+      "sub_total_importe": null
     },
     "HZ": {
       "componentes": ["HZ-B", "HZ-X", "AG"],
       "total_kg": null,
       "precio_kg": null,
-      "importe": null
+      "sub_total_importe": null
+    },
+    "STD": {
+      "componentes": ["STD"],
+      "total_kg": null,
+      "precio_kg": null,
+      "sub_total_importe": null
     },
     "SURI": {
       "componentes": ["SURI-BL", "SURI-FS"],
-      "total_kg": null
-    }
-  },
-  "calculos": {
-    "importe_total": null,
-    "moneda": null
-  },
-  "adelantos": {
-    "items": [],
-    "total": null
-  },
-  "saldos": {
-    "total_calculado": null,
-    "saldo_final": null
-  },
-  "flujo_proceso": [
-    "Clasificado",
-    "Clasificado_detalle (Producto)",
-    "Clasificado_calculo (Precio)"
-  ]
-}
-
-
-
-
-
-
-
-{  
-  "clasificado": {
-    "clasificador": null,
-    "fecha": null,   
-    "observaciones": null,
-	"importe_total": null
-  },
-  "clasificado_calidad": {
-    "huacayo": {
-      "calidades": {
-        "Royal": { "pesos": [], "total_kg": null },
-        "BL-B": { "pesos": [], "total_kg": null },
-        "BL-X": { "pesos": [], "total_kg": null },
-        "FS-B": { "pesos": [], "total_kg": null },
-        "FS-X": { "pesos": [], "total_kg": null },
-        "HZ-B": { "pesos": [], "total_kg": null },
-        "HZ-X": { "pesos": [], "total_kg": null },
-        "AG": { "pesos": [], "total_kg": null },
-        "STD": { "pesos": [], "total_kg": null }
-      }
+      "total_kg": null,
+      "precio_kg": null,
+      "sub_total_importe": null
     },
-    "suri": {
-      "calidades": {
-        "SURI-BL": { "pesos": [], "total_kg": null },
-        "SURI-FS": { "pesos": [], "total_kg": null },
-        "SURI-HZ": { "pesos": [], "total_kg": null },
-        "SURI-STD": { "pesos": [], "total_kg": null }
-      }
-    }
-  },
-  "clasificado_detalle": {
-    "huacayo": {
-      "Royal": {
-        "componentes": ["Royal"],
-        "total_kg": null,
-        "precio_kg": null,
-        "sub_total_importe": null
-      },
-      "BL": {
-        "componentes": ["BL-B", "BL-X"],
-        "total_kg": null,
-        "precio_kg": null,
-        "sub_total_importe": null
-      },
-      "FS": {
-        "componentes": ["FS-B", "FS-X"],
-        "total_kg": null,
-        "precio_kg": null,
-        "sub_total_importe": null
-      },
-      "HZ": {
-        "componentes": ["HZ-B", "HZ-X", "AG"],
-        "total_kg": null,
-        "precio_kg": null,
-        "sub_total_importe": null
-      },
-      "STD": {
-        "componentes": ["STD"],
-        "total_kg": null,
-        "precio_kg": null,
-        "sub_total_importe": null
-      }
-    },
-    "suri": {
-      "SURI": {
-        "componentes": ["SURI-BL", "SURI-FS"],
-        "total_kg": null,
-        "precio_kg": null,
-        "sub_total_importe": null
-      },
-      "SURI-HZ": {
-        "componentes": ["SURI-HZ"],
-        "total_kg": null,
-        "precio_kg": null,
-        "sub_total_importe": null
-      },
-      "SURI-STD": {
-        "componentes": ["SURI-STD"],
-        "total_kg": null,
-        "precio_kg": null,
-        "sub_total_importe": null
-      }
+    "SURI-HZ": {
+      "componentes": ["SURI-HZ"],
+      "total_kg": null,
+      "precio_kg": null,
+      "sub_total_importe": null
     }
   }
 }
-
-
-
--- ==========================================================
--- FIN DEL SCRIPT
--- ==========================================================
-
-
---- JSON
-
-
-{
-  "id_clasificado": "CLAS-001",
-  "clasificador": "ROGER",
-  "fecha": "2025-01-15",
-  "importe_total": 12500.75,
-  "observaciones": "Clasificado de campaña enero",
-
-  "calidades": [
-    {
-      "seccion": "HUACAYO",
-      "calidad": "ROYAL",
-      "total_kg": 320.50
-    },
-    {
-      "seccion": "HUACAYO",
-      "calidad": "BL-B",
-      "total_kg": 210.00
-    },
-    {
-      "seccion": "SURI",
-      "calidad": "SURI-FS",
-      "total_kg": 150.75
-    }
-  ],
-
-  "detalles": [
-    {
-      "seccion": "HUACAYO",
-      "agrupacion": "ROYAL",
-      "total_kg": 320.50,
-      "precio_kg": 18.50,
-      "subtotal_importe": 5929.25
-    },
-    {
-      "seccion": "HUACAYO",
-      "agrupacion": "BL",
-      "total_kg": 210.00,
-      "precio_kg": 15.00,
-      "subtotal_importe": 3150.00
-    },
-    {
-      "seccion": "SURI",
-      "agrupacion": "SURI",
-      "total_kg": 150.75,
-      "precio_kg": 22.50,
-      "subtotal_importe": 3391.50
-    }
-  ]
-}
-
