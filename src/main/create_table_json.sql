@@ -224,7 +224,8 @@ CREATE INDEX IX_CR_ID_CALIDAD     ON CLASIFICADO_RESUMEN (ID_CALIDAD);
 CREATE INDEX IX_CD_ID_AGRUPACION  ON CLASIFICADO_DETALLE (ID_AGRUPACION);
 
 
-------------------------------------------
+==================================================================================
+
 Analiza la imagen proporcionada y devuelve ÚNICAMENTE un JSON válido.
 NO incluyas texto adicional.
 NO Markdown.
@@ -247,37 +248,36 @@ REGLAS CRÍTICAS (OBLIGATORIAS)
    - calidad
    - agrupación
    - precios
-6) SOLO se permite el mapeo controlado cuando el TEXTO COINCIDE EXACTAMENTE con los nombres listados más abajo.
+6) SOLO se permite el mapeo cuando el TEXTO COINCIDE EXACTAMENTE con los nombres definidos.
 7) Si un cálculo depende de un dato inexistente → el resultado DEBE ser null.
-8) No corrijas errores humanos del manuscrito (sumas mal hechas se respetan si están escritas).
+8) No corrijas errores humanos del manuscrito.
+
+9) SI UNA MISMA CALIDAD APARECE EN MÁS DE UN BLOQUE VISUAL,
+   TODOS LOS VALORES VISIBLES DEBEN SER CONSIDERADOS
+   COMO PARTE DE LA MISMA LISTA DE PESOS.
 
 ==================================================
 PASO 1: IDENTIFICAR CABECERA
 ==================================================
 
 CLASIFICADOR:
-Reconocer SOLO si aparece explícitamente uno de los siguientes nombres escritos:
+Reconocer SOLO si aparece explícitamente:
 - ROGER
 - YOLA
 - ISIDORA
 
-Si no aparece claramente → null
-
 FECHA:
-- Detectar formato dd-mm-yy o dd-m-yy
-- Convertir a dd/mm/yyyy
+- dd-mm-yy o dd-m-yy → dd/mm/yyyy
 - Año de 2 dígitos → 20yy
-Si no aparece → null
 
 OBSERVACIONES:
-- SOLO si existe texto adicional descriptivo
-- Caso contrario → null
+- SOLO si hay texto descriptivo adicional
 
 ==================================================
 PASO 2: IDENTIFICAR COLUMNAS DE CALIDAD
 ==================================================
 
-Reconocer SOLO las calidades escritas exactamente como:
+Reconocer SOLO:
 
 HUACAYO:
 - ROYAL
@@ -295,73 +295,53 @@ SURI:
 - SURI-FS
 - SURI-HZ
 
-Si una columna NO existe en la imagen → pesos = [] y total_kg = null
-
 ==================================================
 PASO 3: EXTRAER PESOS
 ==================================================
 
-Para cada columna de calidad:
-- Extraer TODOS los valores numéricos escritos verticalmente
-- Mantener el orden de aparición
+Para cada CALIDAD:
+
+- Extraer TODOS los valores numéricos visibles
+- Incluir valores aunque estén en bloques separados
+- Mantener orden de arriba hacia abajo
 - NO eliminar duplicados
-- NO redondear
 - NO corregir
+- NO completar
 
 Ejemplo:
-"pesos": [50, 45, 60]
+"pesos": [50,45,54,...,46,56,52,...]
 
 ==================================================
 PASO 4: SUMA POR CALIDAD
 ==================================================
 
-- total_kg = suma de pesos SOLO si existen pesos
+- total_kg = suma de TODOS los pesos visibles
 - Si no hay pesos → total_kg = null
 
 ==================================================
-PASO 5: DEFINICIÓN DE AGRUPACIONES
+PASO 5: AGRUPACIONES
 ==================================================
 
-Las agrupaciones SOLO existen así:
-
-- ROYAL     → [ROYAL]
-- BL        → [BL-B, BL-X]
-- FS        → [FS-B, FS-X]
-- HZ        → [HZ-B, HZ-X, AG]
-- STD       → [STD]
-- SURI      → [SURI-BL, SURI-FS]
-- SURI-HZ   → [SURI-HZ]
+- BL → BL-B + BL-X
+- FS → FS-B + FS-X
+- HZ → HZ-B + HZ-X + AG
+(usar SOLO datos existentes)
 
 ==================================================
-PASO 6: TOTAL POR AGRUPACIÓN
+PASO 6: PRECIOS
 ==================================================
 
-- total_kg = suma de total_kg de sus componentes
-- Si falta alguno → sumar SOLO los existentes
-- Si todos son null → total_kg = null
+- precio_kg SOLO si está escrito explícitamente
+- NO inferir desde multiplicaciones
 
 ==================================================
-PASO 7: PRECIO E IMPORTE
+PASO 7: IMPORTE TOTAL
 ==================================================
 
-- precio_kg SOLO si aparece explícitamente escrito
-- sub_total_importe = total_kg × precio_kg
-- Si falta uno → sub_total_importe = null
+- importe_total = suma de subtotales válidos
+- Si no existen → null
 
-==================================================
-PASO 8: IMPORTE TOTAL
-==================================================
-
-- importe_total = suma de sub_total_importe
-- Si alguno es null → sumar SOLO los válidos
-- Si ninguno existe → importe_total = null
-
-==================================================
-PASO 9: RESPUESTA FINAL
-==================================================
-
-Devuelve EXCLUSIVAMENTE el siguiente JSON,
-completando SOLO lo que esté explícitamente en la imagen:
+   
 
 {
   "clasificado": {
