@@ -14,8 +14,8 @@ SET NAMES utf8mb4;
 
 -- Si tu MySQL no tiene cargadas las tablas de zona horaria, 'America/Lima' puede fallar.
 -- En ese caso usa '-05:00'.
--- SET time_zone = 'America/Lima';
-SET time_zone = '-05:00';
+ SET time_zone = 'America/Lima';
+-- SET time_zone = '-05:00';
 
 -- ==========================================================
 -- LIMPIEZA (eliminar si existen)  -- (incluye CLASIFICADOR)
@@ -23,6 +23,7 @@ SET time_zone = '-05:00';
 DROP TABLE IF EXISTS CLASIFICADO_DETALLE;
 DROP TABLE IF EXISTS CLASIFICADO_RESUMEN;
 DROP TABLE IF EXISTS CLASIFICADO_PESO;
+DROP TABLE IF EXISTS CLASIFICADO_ERROR_CARGA;
 DROP TABLE IF EXISTS CLASIFICADO;
 DROP TABLE IF EXISTS CLASIFICADOR;
 DROP TABLE IF EXISTS CALIDAD;
@@ -214,6 +215,26 @@ DEFAULT CHARSET=utf8mb4
 COLLATE=utf8mb4_spanish_ci;
 
 -- ==========================================================
+-- TABLA: CLASIFICADO_ERROR_CARGA
+-- ==========================================================
+CREATE TABLE CLASIFICADO_ERROR_CARGA (
+  ID_ERROR_CARGA  BIGINT NOT NULL AUTO_INCREMENT,
+  ID_CLASIFICADO  VARCHAR(20) NOT NULL,
+  CODIGO          VARCHAR(20) NOT NULL,
+  ERROR_CARGA     VARCHAR(500) NOT NULL,
+
+  CONSTRAINT PK_CLASIFICADO_ERROR_CARGA PRIMARY KEY (ID_ERROR_CARGA),
+
+  CONSTRAINT FK_CEC_CLASIFICADO
+    FOREIGN KEY (ID_CLASIFICADO)
+    REFERENCES CLASIFICADO(ID_CLASIFICADO)
+    ON DELETE RESTRICT
+    ON UPDATE RESTRICT
+) ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
+COLLATE=utf8mb4_spanish_ci;
+
+-- ==========================================================
 -- INDICES RECOMENDADOS
 -- ==========================================================
 CREATE INDEX IX_CALIDAD_SECCION   ON CALIDAD (ID_SECCION);
@@ -223,6 +244,7 @@ CREATE INDEX IX_CP_CLASIF_CALIDAD ON CLASIFICADO_PESO (ID_CLASIFICADO, ID_CALIDA
 CREATE INDEX IX_CR_ID_CALIDAD     ON CLASIFICADO_RESUMEN (ID_CALIDAD);
 CREATE INDEX IX_CD_ID_AGRUPACION  ON CLASIFICADO_DETALLE (ID_AGRUPACION);
 
+ 
 
 ==================================================================================
 
