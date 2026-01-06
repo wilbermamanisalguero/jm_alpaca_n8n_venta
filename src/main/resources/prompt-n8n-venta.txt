@@ -1,0 +1,166 @@
+Analiza la imagen y devuelve ÚNICAMENTE un JSON válido.
+NO incluyas texto adicional, NO Markdown, NO explicaciones.
+
+OBJETIVO:
+Extraer una VENTA (cabecera + detalle) desde una hoja escrita a mano.
+
+========================
+REGLAS CRÍTICAS
+========================
+1) Responder SOLO con JSON válido.
+2) PROHIBIDO inferir, asumir o completar datos,
+   EXCEPTO en el mapeo controlado de cliente,vendedor,producto por nombre explícito (ver excepción).
+3) Si un campo NO aparece explícitamente en la imagen → su valor DEBE SER null.
+4) PROHIBIDO generar valores por defecto.
+5) PROHIBIDO deducir:
+   - RUC vendedor
+   - Código de factura
+   - Factura anticipo
+   si no están escritos en la imagen.
+
+========================
+REGLAS DE INTERPRETACIÓN
+========================
+6) Fecha despacho:
+   - Detectar dd-mm-yy o dd-m-yy
+   - Convertir a dd/mm/yyyy
+   - Año de 2 dígitos → 20yy
+7) Tipo de producto:
+   - Si aparece la palabra "CLASIFICADO":
+       tipoProducto = "CLASIFICADO"
+       tipoMoneda = "DOLAR AMERICANO"
+       unidadMedida = "KILOS"
+   - Si aparece la palabra "BROSA":
+       tipoProducto = "BROSA"
+       tipoMoneda = "SOLES"
+       unidadMedida = "UNIDAD"
+8) Cálculos del detalle:
+   - peso = primer número
+   - descuento = segundo número
+   - cantidad = peso - descuento
+   - importeSubTotal = cantidad * valorUnitario
+9) Totales:
+   - importeTotal = suma de todos los importeSubTotal
+   - Si hay un total escrito en la imagen, conservarlo tal cual.
+10) Tipo de venta:
+   - Asignar tipoVenta SOLO si aparece explícitamente en la imagen
+     (ej. "TIPO VENTA : LIQUIDACION").
+
+========================
+TABLA DE MAPEO DE CLIENTE (USO CONTROLADO)
+========================
+RUC CLIENTE:
+- 20100192650 → MICHELL Y CIA S.A. , TEXAO
+- 20100199743 → INCA TOPS S.A.
+- 20455049564 → PITATA S.A.C.
+- 20558603608 → FILAVAL S.R.L.
+- 20603428774 → MANUFACTURAS Y SERVICIOS S & P S.A.C. (PERCY)
+- 20604081841 → GENERALES THOCHELLQ S.A.C.
+- 20610912762 → PRIMAS TEXTILES DEL SUR S.R.L. (RAUL)
+
+========================
+EXCEPCIÓN CONTROLADA – MAPEO DE CLIENTE
+========================
+- Si en la imagen aparece explícitamente un nombre de cliente
+  (por ejemplo: "RAUL", "PERCY"),
+- Y dicho nombre existe exactamente en la tabla de mapeo,
+- ENTONCES se permite asignar el rucCliente correspondiente.
+- Esta es la ÚNICA inferencia permitida.
+- No aplicar mapeo si el nombre no aparece literalmente.
+
+========================
+TABLA DE MAPEO DE VENDEDOR (USO CONTROLADO)
+========================
+		RUC_VENDEDOR  VENDEDOR
+		10016891296	  SALGUERO MAMANI GREGORIA ALFONZA
+		10023732217	  MAMANI COAQUIRA JACINTO
+		10428954012	  CHAIÑA CHURATA ALEX
+		10432233591	  QUISPE SALGUERO JOSE LUIS
+		10454291846	  MAMANI SALGUERO YOVANA 
+		10466379463	  MAMANI SALGUERO EDISON GUIDO
+		20608587030	  COMERCIAL CHILI PACCHOCA E.I.R.L.
+		20611538287	  COMERCIAL GOYIS S.R.L.
+
+========================
+EXCEPCIÓN CONTROLADA – MAPEO DE VENDEDOR
+========================
+- Si en la imagen aparece explícitamente un nombre de VENDEDOR
+  (por ejemplo: "PACHOCA"),
+- Y dicho nombre existe exactamente en la tabla de mapeo,
+- ENTONCES se permite asignar el rucVendedor correspondiente.
+- Esta es la ÚNICA inferencia permitida.
+- No aplicar mapeo si el nombre no aparece literalmente.
+
+========================
+TABLA DE MAPEO DE PRODUCTO (USO CONTROLADO)
+========================		
+			PRODUCTOS CLASIFICADO
+			ROYAL  ES TIPO CLASIFICADO
+			BL-B   ES TIPO CLASIFICADO
+			BL-X   ES TIPO CLASIFICADO
+			FS-B   ES TIPO CLASIFICADO
+			FS-X   ES TIPO CLASIFICADO
+			AG     ES TIPO CLASIFICADO
+			SURI FS-B  ES TIPO CLASIFICADO
+			SURI FS-X  ES TIPO CLASIFICADO
+			SURI HZ  ES TIPO CLASIFICADO
+
+			PRODUCTOS BROSA
+			
+			HYO BLANCO ES TIPO BROSA Y PRODUCTO HYO BLANCO,HUACAYO BLANCO 			
+			HYO COLOR ES TIPO BROSA Y PRODUCTO HYO COLOR, HUACAYO COLOR 			
+			
+
+========================
+EXCEPCIÓN CONTROLADA – MAPEO DE PRODUCTO
+========================
+- Si en la imagen aparece explícitamente un nombre de PRODUCTO
+  (por ejemplo: "HUACAYO COLOR"),
+- Y dicho nombre existe exactamente en la tabla de mapeo,
+- ENTONCES se permite asignar el rucVendedor correspondiente.
+- Esta es la ÚNICA inferencia permitida.
+- No aplicar mapeo si el nombre no aparece literalmente.
+
+========================
+REGLA DE CONTEXTO GLOBAL DEL DOCUMENTO:
+========================
+- Si en el encabezado del documento aparece explícitamente una clasificación general
+  como "SURI CLASIFICADO", "HUACAYO CLASIFICADO" o similar,
+- ENTONCES todos los ítems del detalle heredan:
+    tipoProducto = "CLASIFICADO"
+    tipoMoneda = "DOLAR AMERICANO"
+    unidadMedida = "KILOS"
+- Esta regla tiene PRIORIDAD sobre el mapeo individual por producto.
+
+========================
+FORMATO DE SALIDA EXACTO
+========================
+Devuelve ÚNICAMENTE un JSON con esta estructura.
+
+{
+  "venta": {
+    "tipoVenta": null,
+    "rucCliente": null,
+	  "cliente": null,
+    "codigoFactura": null,
+    "fechaDespacho": null,
+    "rucVendedor": null,
+	  "vendedor": null,
+    "facturaAnticipo": null,
+    "tipoMoneda": null,
+    "importeTotal": null,
+    "observacion": null,
+    "detalle": [
+      {
+        "producto": "",
+        "tipoProducto": "",
+        "peso": 0,
+        "descuento": 0,
+        "cantidad": 0,
+        "unidadMedida": "",
+        "valorUnitario": 0,
+        "importeSubTotal": 0
+      }
+    ]
+  }
+}

@@ -25,13 +25,11 @@ public class VentaDTO {
     private String tipoVenta;
 
     @NotNull(message = "La fecha de despacho es obligatoria")
-    @JsonFormat(pattern = "yyyy-MM-dd")
+    @JsonFormat(pattern = "dd/MM/yyyy")
     private LocalDate fechaDespacho;
 
-    @NotNull(message = "El RUC del vendedor es obligatorio")
     private Long rucVendedor;
 
-    @NotBlank(message = "El nombre del vendedor es obligatorio")
     private String vendedor;
 
     private String codigoFactura;
